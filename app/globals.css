@@ -883,252 +883,371 @@ a {
   }
 }
 /* =========================================================
-   WKORA FLOW — ÁREA INTERNA / FUNCIONÁRIOS
+   WKORA FLOW — ÁREA DE FUNCIONÁRIOS
    ========================================================= */
 
-.employee-page {
+.funcionarios-page {
   min-height: 100vh;
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 24px;
-  background:
-    radial-gradient(circle at top, rgba(212, 175, 55, 0.12), transparent 35%),
-    #050505;
-  color: #fff;
+  padding: 40px 20px;
   box-sizing: border-box;
+
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(212, 175, 55, 0.12),
+      transparent 35%
+    ),
+    #070707;
+
+  color: #f5f5f5;
 }
 
-.employee-card {
+.funcionarios-card {
   width: 100%;
-  max-width: 520px;
-  padding: 32px;
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: 24px;
-  background: linear-gradient(
-    145deg,
-    rgba(20, 20, 20, 0.98),
-    rgba(8, 8, 8, 0.98)
-  );
+  max-width: 560px;
+
+  padding: 38px;
+
+  box-sizing: border-box;
+
+  background: rgba(15, 15, 15, 0.96);
+
+  border: 1px solid rgba(212, 175, 55, 0.28);
+
+  border-radius: 22px;
+
   box-shadow:
-    0 25px 80px rgba(0, 0, 0, 0.55),
-    0 0 40px rgba(212, 175, 55, 0.05);
+    0 20px 70px rgba(0, 0, 0, 0.65),
+    0 0 35px rgba(212, 175, 55, 0.05);
 }
 
-.employee-brand {
+.funcionarios-brand {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 30px;
-}
+  align-items: baseline;
+  gap: 4px;
 
-.employee-logo {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #d4af37, #f3d77a);
-  color: #050505;
-  font-size: 23px;
-  font-weight: 900;
-  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.2);
-}
+  margin-bottom: 14px;
 
-.employee-brand strong {
-  display: block;
-  color: #d4af37;
-  font-size: 18px;
-  letter-spacing: 0.5px;
-}
-
-.employee-brand span {
-  display: block;
-  margin-top: 3px;
-  color: #8f8f8f;
-  font-size: 13px;
-}
-
-.employee-heading {
-  margin-bottom: 24px;
-}
-
-.employee-badge {
-  display: inline-flex;
-  padding: 6px 10px;
-  margin-bottom: 12px;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  border-radius: 999px;
-  color: #d4af37;
-  background: rgba(212, 175, 55, 0.07);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 25px;
   letter-spacing: 1px;
 }
 
-.employee-heading h1 {
-  margin: 0;
-  color: #fff;
+.funcionarios-brand strong {
+  color: #ffffff;
+}
+
+.funcionarios-brand span {
+  color: #d4af37;
+  font-weight: 700;
+}
+
+.funcionarios-badge {
+  display: inline-flex;
+
+  padding: 7px 12px;
+
+  margin-bottom: 20px;
+
+  border-radius: 999px;
+
+  background: rgba(212, 175, 55, 0.1);
+
+  border: 1px solid rgba(212, 175, 55, 0.3);
+
+  color: #d4af37;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 1.5px;
+}
+
+.funcionarios-card h1 {
+  margin: 0 0 10px;
+
+  color: #ffffff;
+
   font-size: 30px;
   line-height: 1.15;
 }
 
-.employee-heading p {
-  margin: 10px 0 0;
-  color: #999;
+.funcionarios-description {
+  margin: 0 0 26px;
+
+  color: #a9a9a9;
+
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-.employee-switch {
+.funcionarios-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
+
   gap: 8px;
+
+  margin-bottom: 28px;
+
   padding: 5px;
-  margin-bottom: 24px;
-  border-radius: 13px;
-  background: #111;
+
+  background: #0a0a0a;
+
   border: 1px solid #242424;
+
+  border-radius: 12px;
 }
 
-.employee-switch button {
-  border: 0;
-  border-radius: 9px;
+.funcionarios-tabs button {
+  width: 100%;
+
   padding: 11px;
+
+  border: 0;
+  border-radius: 8px;
+
   background: transparent;
+
   color: #888;
-  font-weight: 700;
+
+  font-size: 14px;
+  font-weight: 600;
+
   cursor: pointer;
 }
 
-.employee-switch button.active {
+.funcionarios-tabs button.active {
   background: #d4af37;
-  color: #050505;
+  color: #080808;
 }
 
-.employee-form {
+.funcionarios-card form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
-.employee-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  color: #d5d5d5;
+.funcionarios-card label {
+  margin-bottom: 8px;
+
+  color: #dddddd;
+
   font-size: 13px;
   font-weight: 600;
 }
 
-.employee-form input,
-.employee-form select {
+.funcionarios-card input,
+.funcionarios-card select {
   width: 100%;
+
   min-height: 48px;
-  box-sizing: border-box;
+
+  margin-bottom: 18px;
+
   padding: 0 14px;
-  border: 1px solid #292929;
-  border-radius: 11px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #303030;
+
+  border-radius: 10px;
+
   outline: none;
-  background: #0e0e0e;
-  color: #fff;
+
+  background: #0b0b0b;
+
+  color: #ffffff;
+
   font-size: 14px;
-  transition: 0.2s ease;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.employee-form input::placeholder {
-  color: #5f5f5f;
+.funcionarios-card input::placeholder {
+  color: #666;
 }
 
-.employee-form input:focus,
-.employee-form select:focus {
+.funcionarios-card input:focus,
+.funcionarios-card select:focus {
   border-color: #d4af37;
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.08);
+
+  box-shadow:
+    0 0 0 3px rgba(212, 175, 55, 0.08);
 }
 
-.employee-form select {
-  appearance: auto;
-}
-
-.employee-submit {
-  width: 100%;
-  min-height: 50px;
-  margin-top: 4px;
-  border: 0;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #d4af37, #f0d36b);
-  color: #050505;
-  font-size: 15px;
-  font-weight: 900;
+.funcionarios-card select {
   cursor: pointer;
-  transition: 0.2s ease;
 }
 
-.employee-submit:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 25px rgba(212, 175, 55, 0.18);
-}
+.cargo-description {
+  margin: -8px 0 20px;
 
-.employee-security {
-  padding: 14px;
-  border: 1px solid rgba(212, 175, 55, 0.15);
-  border-radius: 12px;
-  background: rgba(212, 175, 55, 0.04);
-}
-
-.employee-security strong {
-  color: #d4af37;
-  font-size: 13px;
-}
-
-.employee-security p {
-  margin: 7px 0 0;
   color: #858585;
+
   font-size: 12px;
+
   line-height: 1.5;
 }
 
-.employee-message {
-  margin-top: 18px;
-  padding: 13px 14px;
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  border-radius: 11px;
+.security-box {
+  margin: 4px 0 20px;
+
+  padding: 16px;
+
+  border-radius: 12px;
+
   background: rgba(212, 175, 55, 0.06);
-  color: #d4af37;
-  font-size: 13px;
-  line-height: 1.45;
+
+  border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
-.employee-footer {
-  margin-top: 25px;
-  padding-top: 18px;
-  border-top: 1px solid #202020;
-  color: #555;
+.security-box strong {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #d4af37;
+
+  font-size: 14px;
+}
+
+.security-box p {
+  margin: 0;
+
+  color: #aaa;
+
+  font-size: 12px;
+
+  line-height: 1.6;
+}
+
+.error-message,
+.success-message {
+  margin-bottom: 18px;
+
+  padding: 13px 14px;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+.error-message {
+  background: rgba(180, 35, 35, 0.12);
+
+  border: 1px solid rgba(220, 70, 70, 0.3);
+
+  color: #ff8f8f;
+}
+
+.success-message {
+  background: rgba(50, 160, 90, 0.12);
+
+  border: 1px solid rgba(70, 190, 110, 0.3);
+
+  color: #8de0a5;
+}
+
+.create-account-button {
+  width: 100%;
+
+  min-height: 50px;
+
+  padding: 0 18px;
+
+  border: 0;
+
+  border-radius: 11px;
+
+  background: #d4af37;
+
+  color: #080808;
+
+  font-size: 15px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.create-account-button:hover {
+  box-shadow:
+    0 8px 25px rgba(212, 175, 55, 0.15);
+}
+
+.create-account-button:active {
+  transform: scale(0.98);
+}
+
+.create-account-button:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+
+  box-shadow: none;
+}
+
+.funcionarios-card footer {
+  margin-top: 26px;
+
+  padding-top: 20px;
+
+  border-top: 1px solid #222;
+
   text-align: center;
+
+  color: #666;
+
   font-size: 11px;
 }
 
-/* CELULAR */
+
+/* =========================================================
+   CELULAR
+   ========================================================= */
+
 @media (max-width: 600px) {
-  .employee-page {
-    min-height: 100svh;
-    padding: 14px;
+  .funcionarios-page {
     align-items: flex-start;
+
+    padding: 20px 12px;
   }
 
-  .employee-card {
-    margin-top: 10px;
-    padding: 22px 18px;
-    border-radius: 20px;
+  .funcionarios-card {
+    padding: 25px 18px;
+
+    border-radius: 17px;
   }
 
-  .employee-heading h1 {
+  .funcionarios-card h1 {
     font-size: 25px;
   }
 
-  .employee-brand {
-    margin-bottom: 24px;
+  .funcionarios-description {
+    font-size: 13px;
   }
+
+  .funcionarios-card input,
+  .funcionarios-card select {
+    min-height: 50px;
+
+    font-size: 16px;
   }
+
+  .create-account-button {
+    min-height: 52px;
+
+    font-size: 15px;
+  }
+}
