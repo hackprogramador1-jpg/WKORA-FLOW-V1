@@ -1,0 +1,41 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="120" fill="#0B0B0B"/>
+  
+  <rect
+    x="40"
+    y="40"
+    width="432"
+    height="432"
+    rx="100"
+    fill="none"
+    stroke="#D4AF37"
+    stroke-width="8"
+    opacity="0.35"
+  />
+
+  <path
+    d="M130 145V367M130 256H382M382 145V367"
+    stroke="#D4AF37"
+    stroke-width="38"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <circle cx="130" cy="145" r="18" fill="#F0D477"/>
+  <circle cx="382" cy="145" r="18" fill="#F0D477"/>
+  <circle cx="130" cy="367" r="18" fill="#D4AF37"/>
+  <circle cx="382" cy="367" r="18" fill="#D4AF37"/>
+
+  <text
+    x="256"
+    y="430"
+    text-anchor="middle"
+    fill="#F0D477"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="32"
+    font-weight="700"
+    letter-spacing="8"
+  >
+    WKORA
+  </text>
+</svg>
