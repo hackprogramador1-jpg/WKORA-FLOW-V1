@@ -1,21 +1,22 @@
 "use client";
 
 import { useState } from "react";
+
 import {
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
   sendEmailVerification,
+  signOut,
 } from "firebase/auth";
+
 import {
   doc,
   setDoc,
-  getDoc,
   serverTimestamp,
 } from "firebase/firestore";
 
 import { auth, db } from "../../lib/firebase";
 
-const cargos = [
+const CARGOS = [
   {
     id: "atendimento",
     nome: "Atendimento",
@@ -42,65 +43,66 @@ const cargos = [
     descricao: "Gestão operacional e administrativa.",
   },
   {
-    id: "ceo",
+    id: "CEO",
     nome: "CEO",
     descricao: "Administração máxima da organização.",
   },
 ];
 
 export default function FuncionariosPage() {
-  const [modo, setModo] = useState("login");
-
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [cargoSolicitado, setCargoSolicitado] = useState("atendimento");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [cargo, setCargo] = useState("");
 
   const [mensagem, setMensagem] = useState("");
+  const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
 
-  async function cadastrar(e) {
-    e.preventDefault();
+  async function criarConta(event) {
+    event.preventDefault();
 
     setMensagem("");
+    setErro("");
 
-    if (
-      !nome ||
-      !email ||
-      !telefone ||
-      !senha ||
-      !confirmarSenha ||
-      !cargo
-    ) {
-      setMensagem("Preencha todos os campos.");
+    if (!nome.trim()) {
+      setErro("Informe seu nome completo.");
+      return;
+    }
+
+    if (!email.trim()) {
+      setErro("Informe seu e-mail profissional.");
+      return;
+    }
+
+    if (!telefone.trim()) {
+      setErro("Informe seu telefone.");
+      return;
+    }
+
+    if (!senha || senha.length < 8) {
+      setErro("A senha precisa ter pelo menos 8 caracteres.");
       return;
     }
 
     if (senha !== confirmarSenha) {
-      setMensagem("As senhas não coincidem.");
+      setErro("As senhas não são iguais.");
       return;
     }
 
-    if (senha.length < 8) {
-      setMensagem("A senha deve possuir pelo menos 8 caracteres.");
-      return;
-    }
+    setCarregando(true);
 
     try {
-      setCarregando(true);
-
       const credencial =
         await createUserWithEmailAndPassword(
           auth,
-          email,
+          email.trim(),
           senha
         );
 
       const usuario = credencial.user;
-
-      await sendEmailVerification(usuario);
 
       await setDoc(
         doc(db, "funcionarios", usuario.uid),
@@ -113,8 +115,10 @@ export default function FuncionariosPage() {
 
           telefone: telefone.trim(),
 
-          cargoSolicitado: cargo,
+          cargoSolicitado,
 
+          // O cargo oficial NÃO é concedido automaticamente.
+          // Um responsável deverá aprovar a conta.
           cargo: "pendente",
 
           status: "pendente",
@@ -127,98 +131,36 @@ export default function FuncionariosPage() {
         }
       );
 
+      await sendEmailVerification(usuario);
+
+      await signOut(auth);
+
       setMensagem(
-        "Conta criada com sucesso. Verifique seu e-mail. Seu acesso aos setores internos ficará pendente de aprovação."
+        "Conta criada com sucesso. Enviamos um e-mail de verificação. Após a verificação, sua conta ficará aguardando aprovação de um responsável da WKORA DIGITAL."
       );
 
       setNome("");
       setEmail("");
       setTelefone("");
+      setCargoSolicitado("atendimento");
       setSenha("");
       setConfirmarSenha("");
-      setCargo("");
     } catch (error) {
       console.error(error);
 
       if (error.code === "auth/email-already-in-use") {
-        setMensagem("Este e-mail já possui uma conta.");
+        setErro("Este e-mail já possui uma conta.");
       } else if (error.code === "auth/invalid-email") {
-        setMensagem("O e-mail informado é inválido.");
+        setErro("O e-mail informado não é válido.");
       } else if (error.code === "auth/weak-password") {
-        setMensagem("A senha é muito fraca.");
-      } else {
-        setMensagem(
-          "Não foi possível criar a conta. Tente novamente."
-        );
-      }
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function entrar(e) {
-    e.preventDefault();
-
-    setMensagem("");
-
-    if (!email || !senha) {
-      setMensagem("Informe seu e-mail e sua senha.");
-      return;
-    }
-
-    try {
-      setCarregando(true);
-
-      const credencial =
-        await signInWithEmailAndPassword(
-          auth,
-          email,
-          senha
-        );
-
-      const usuario = credencial.user;
-
-      const perfilRef = doc(
-        db,
-        "funcionarios",
-        usuario.uid
-      );
-
-      const perfilSnap = await getDoc(perfilRef);
-
-      if (!perfilSnap.exists()) {
-        setMensagem(
-          "Sua conta existe, mas o perfil interno ainda não foi criado."
-        );
-        return;
-      }
-
-      const perfil = perfilSnap.data();
-
-      if (perfil.status !== "ativo") {
-        setMensagem(
-          `Sua conta está com status: ${perfil.status}. Aguarde a aprovação de um responsável.`
-        );
-        return;
-      }
-
-      setMensagem(
-        `Login realizado. Cargo: ${perfil.cargo}`
-      );
-    } catch (error) {
-      console.error(error);
-
-      if (error.code === "auth/invalid-credential") {
-        setMensagem(
-          "E-mail ou senha incorretos."
-        );
-      } else if (error.code === "auth/user-not-found") {
-        setMensagem(
-          "Conta não encontrada."
+        setErro("A senha é muito fraca.");
+      } else if (error.code === "permission-denied") {
+        setErro(
+          "O Firebase bloqueou o cadastro no Firestore. Precisamos configurar as regras de segurança."
         );
       } else {
-        setMensagem(
-          "Não foi possível realizar o login."
+        setErro(
+          "Não foi possível criar a conta. Verifique a configuração do Firebase."
         );
       }
     } finally {
@@ -227,245 +169,169 @@ export default function FuncionariosPage() {
   }
 
   return (
-    <main className="employee-page">
-      <div className="employee-card">
+    <main className="funcionarios-page">
+      <section className="funcionarios-card">
 
-        <div className="employee-brand">
-          <div className="employee-logo">
-            W
-          </div>
-
-          <div>
-            <strong>WKORA FLOW</strong>
-            <span>Painel interno</span>
-          </div>
+        <div className="funcionarios-brand">
+          <strong>WKORA</strong>
+          <span> FLOW</span>
         </div>
 
-        <div className="employee-heading">
-
-          <span className="employee-badge">
-            ÁREA INTERNA
-          </span>
-
-          <h1>
-            {modo === "login"
-              ? "Acesso dos funcionários"
-              : "Criar conta de funcionário"}
-          </h1>
-
-          <p>
-            Acesso controlado aos setores internos da WKORA DIGITAL.
-          </p>
-
+        <div className="funcionarios-badge">
+          ÁREA INTERNA
         </div>
 
-        <div className="employee-switch">
+        <h1>Criar conta de funcionário</h1>
 
-          <button
-            type="button"
-            className={modo === "login" ? "active" : ""}
-            onClick={() => {
-              setModo("login");
-              setMensagem("");
-            }}
-          >
+        <p className="funcionarios-description">
+          Acesso controlado aos setores internos da WKORA DIGITAL.
+        </p>
+
+        <div className="funcionarios-tabs">
+          <button type="button">
             Entrar
           </button>
 
           <button
             type="button"
-            className={modo === "cadastro" ? "active" : ""}
-            onClick={() => {
-              setModo("cadastro");
-              setMensagem("");
-            }}
+            className="active"
           >
             Criar conta
           </button>
-
         </div>
 
-        {modo === "login" ? (
+        <form onSubmit={criarConta}>
 
-          <form
-            onSubmit={entrar}
-            className="employee-form"
+          <label>
+            Nome completo
+          </label>
+
+          <input
+            type="text"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Digite seu nome completo"
+            autoComplete="name"
+          />
+
+          <label>
+            E-mail profissional
+          </label>
+
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="seuemail@empresa.com"
+            autoComplete="email"
+          />
+
+          <label>
+            Telefone
+          </label>
+
+          <input
+            type="tel"
+            value={telefone}
+            onChange={(e) => setTelefone(e.target.value)}
+            placeholder="(00) 00000-0000"
+            autoComplete="tel"
+          />
+
+          <label>
+            Cargo solicitado
+          </label>
+
+          <select
+            value={cargoSolicitado}
+            onChange={(e) =>
+              setCargoSolicitado(e.target.value)
+            }
           >
-
-            <label>
-              E-mail profissional
-
-              <input
-                type="email"
-                placeholder="seuemail@empresa.com"
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-              />
-            </label>
-
-            <label>
-              Senha
-
-              <input
-                type="password"
-                placeholder="Digite sua senha"
-                value={senha}
-                onChange={(e) =>
-                  setSenha(e.target.value)
-                }
-              />
-            </label>
-
-            <button
-              className="employee-submit"
-              type="submit"
-              disabled={carregando}
-            >
-              {carregando
-                ? "Entrando..."
-                : "Entrar no painel"}
-            </button>
-
-          </form>
-
-        ) : (
-
-          <form
-            onSubmit={cadastrar}
-            className="employee-form"
-          >
-
-            <label>
-              Nome completo
-
-              <input
-                type="text"
-                placeholder="Digite seu nome"
-                value={nome}
-                onChange={(e) =>
-                  setNome(e.target.value)
-                }
-              />
-            </label>
-
-            <label>
-              E-mail profissional
-
-              <input
-                type="email"
-                placeholder="seuemail@empresa.com"
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-              />
-            </label>
-
-            <label>
-              Telefone
-
-              <input
-                type="tel"
-                placeholder="(00) 00000-0000"
-                value={telefone}
-                onChange={(e) =>
-                  setTelefone(e.target.value)
-                }
-              />
-            </label>
-
-            <label>
-              Cargo solicitado
-
-              <select
-                value={cargo}
-                onChange={(e) =>
-                  setCargo(e.target.value)
-                }
+            {CARGOS.map((cargo) => (
+              <option
+                key={cargo.id}
+                value={cargo.id}
               >
+                {cargo.nome}
+              </option>
+            ))}
+          </select>
 
-                <option value="">
-                  Selecione seu cargo
-                </option>
+          <p className="cargo-description">
+            {
+              CARGOS.find(
+                (cargo) =>
+                  cargo.id === cargoSolicitado
+              )?.descricao
+            }
+          </p>
 
-                {cargos.map((item) => (
-                  <option
-                    key={item.id}
-                    value={item.id}
-                  >
-                    {item.nome}
-                  </option>
-                ))}
+          <label>
+            Senha
+          </label>
 
-              </select>
-            </label>
+          <input
+            type="password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            placeholder="Mínimo de 8 caracteres"
+            autoComplete="new-password"
+          />
 
-            <label>
-              Senha
+          <label>
+            Confirmar senha
+          </label>
 
-              <input
-                type="password"
-                placeholder="Mínimo de 8 caracteres"
-                value={senha}
-                onChange={(e) =>
-                  setSenha(e.target.value)
-                }
-              />
-            </label>
+          <input
+            type="password"
+            value={confirmarSenha}
+            onChange={(e) =>
+              setConfirmarSenha(e.target.value)
+            }
+            placeholder="Digite a senha novamente"
+            autoComplete="new-password"
+          />
 
-            <label>
-              Confirmar senha
+          <div className="security-box">
+            <strong>🔐 Segurança</strong>
 
-              <input
-                type="password"
-                placeholder="Digite a senha novamente"
-                value={confirmarSenha}
-                onChange={(e) =>
-                  setConfirmarSenha(e.target.value)
-                }
-              />
-            </label>
-
-            <div className="employee-security">
-
-              <strong>
-                🔐 Conta protegida
-              </strong>
-
-              <p>
-                O cargo escolhido será registrado como
-                solicitação. O acesso oficial será liberado
-                somente após autorização interna.
-              </p>
-
-            </div>
-
-            <button
-              className="employee-submit"
-              type="submit"
-              disabled={carregando}
-            >
-              {carregando
-                ? "Criando conta..."
-                : "Criar conta"}
-            </button>
-
-          </form>
-        )}
-
-        {mensagem && (
-          <div className="employee-message">
-            {mensagem}
+            <p>
+              A conta será criada como pendente.
+              O cargo solicitado será analisado e
+              aprovado por um responsável autorizado.
+            </p>
           </div>
-        )}
 
-        <footer className="employee-footer">
+          {erro && (
+            <div className="error-message">
+              {erro}
+            </div>
+          )}
+
+          {mensagem && (
+            <div className="success-message">
+              {mensagem}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={carregando}
+            className="create-account-button"
+          >
+            {carregando
+              ? "Criando conta..."
+              : "Criar conta"}
+          </button>
+
+        </form>
+
+        <footer>
           WKORA DIGITAL • Sistema interno
         </footer>
 
-      </div>
+      </section>
     </main>
   );
       }
