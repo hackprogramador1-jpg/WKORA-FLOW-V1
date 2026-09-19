@@ -1,5 +1,5 @@
-import Dashboard from "../components/Dashboard";
+import FlowApp from "../components/FlowApp";
 
 export default function Home() {
-  return <Dashboard />;
+  return <FlowApp />;
 }
