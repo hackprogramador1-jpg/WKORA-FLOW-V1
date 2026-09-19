@@ -53,9 +53,11 @@ export default function FuncionariosPage() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [telefone, setTelefone] = useState("");
-  const [cargoSolicitado, setCargoSolicitado] = useState("atendimento");
+  const [cargoSolicitado, setCargoSolicitado] =
+    useState("atendimento");
   const [senha, setSenha] = useState("");
-  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] =
+    useState("");
 
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
@@ -83,7 +85,9 @@ export default function FuncionariosPage() {
     }
 
     if (!senha || senha.length < 8) {
-      setErro("A senha precisa ter pelo menos 8 caracteres.");
+      setErro(
+        "A senha precisa ter pelo menos 8 caracteres."
+      );
       return;
     }
 
@@ -98,7 +102,7 @@ export default function FuncionariosPage() {
       const credencial =
         await createUserWithEmailAndPassword(
           auth,
-          email.trim(),
+          email.trim().toLowerCase(),
           senha
         );
 
@@ -117,7 +121,7 @@ export default function FuncionariosPage() {
 
           cargoSolicitado,
 
-          // O cargo oficial NÃO é concedido automaticamente.
+          // O cargo oficial não é concedido automaticamente.
           // Um responsável deverá aprovar a conta.
           cargo: "pendente",
 
@@ -148,13 +152,27 @@ export default function FuncionariosPage() {
     } catch (error) {
       console.error(error);
 
-      if (error.code === "auth/email-already-in-use") {
-        setErro("Este e-mail já possui uma conta.");
-      } else if (error.code === "auth/invalid-email") {
-        setErro("O e-mail informado não é válido.");
-      } else if (error.code === "auth/weak-password") {
+      if (
+        error.code ===
+        "auth/email-already-in-use"
+      ) {
+        setErro(
+          "Este e-mail já possui uma conta."
+        );
+      } else if (
+        error.code === "auth/invalid-email"
+      ) {
+        setErro(
+          "O e-mail informado não é válido."
+        );
+      } else if (
+        error.code === "auth/weak-password"
+      ) {
         setErro("A senha é muito fraca.");
-      } else if (error.code === "permission-denied") {
+      } else if (
+        error.code === "permission-denied" ||
+        error.code === "firestore/permission-denied"
+      ) {
         setErro(
           "O Firebase bloqueou o cadastro no Firestore. Precisamos configurar as regras de segurança."
         );
@@ -184,7 +202,8 @@ export default function FuncionariosPage() {
         <h1>Criar conta de funcionário</h1>
 
         <p className="funcionarios-description">
-          Acesso controlado aos setores internos da WKORA DIGITAL.
+          Acesso controlado aos setores internos da
+          WKORA DIGITAL.
         </p>
 
         <div className="funcionarios-tabs">
@@ -209,7 +228,9 @@ export default function FuncionariosPage() {
           <input
             type="text"
             value={nome}
-            onChange={(e) => setNome(e.target.value)}
+            onChange={(e) =>
+              setNome(e.target.value)
+            }
             placeholder="Digite seu nome completo"
             autoComplete="name"
           />
@@ -221,7 +242,9 @@ export default function FuncionariosPage() {
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
             placeholder="seuemail@empresa.com"
             autoComplete="email"
           />
@@ -233,7 +256,9 @@ export default function FuncionariosPage() {
           <input
             type="tel"
             value={telefone}
-            onChange={(e) => setTelefone(e.target.value)}
+            onChange={(e) =>
+              setTelefone(e.target.value)
+            }
             placeholder="(00) 00000-0000"
             autoComplete="tel"
           />
@@ -274,7 +299,9 @@ export default function FuncionariosPage() {
           <input
             type="password"
             value={senha}
-            onChange={(e) => setSenha(e.target.value)}
+            onChange={(e) =>
+              setSenha(e.target.value)
+            }
             placeholder="Mínimo de 8 caracteres"
             autoComplete="new-password"
           />
@@ -334,4 +361,4 @@ export default function FuncionariosPage() {
       </section>
     </main>
   );
-      }
+            }
