@@ -1,8 +1,5 @@
-"use client";
+import FlowApp from "../components/FlowApp";
 
-import { useState } from "react";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendEmailVerification,
-} from "firebase/auth";
+export default function Home() {
+  return <FlowApp />;
+}
