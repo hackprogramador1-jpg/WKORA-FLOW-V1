@@ -35,8 +35,10 @@ export default function AtendimentoPage() {
         try {
           if (!usuarioAtual.emailVerified) {
             await signOut(auth);
+
             window.location.href =
               "/funcionarios/login";
+
             return;
           }
 
@@ -51,7 +53,7 @@ export default function AtendimentoPage() {
 
           if (!funcionarioSnapshot.exists()) {
             throw new Error(
-              "Cadastro do funcionário não encontrado."
+              "Funcionário não encontrado no Firestore."
             );
           }
 
@@ -61,10 +63,9 @@ export default function AtendimentoPage() {
           if (
             funcionario.status !== "aprovado"
           ) {
-            await signOut(auth);
-            window.location.href =
-              "/funcionarios/login";
-            return;
+            throw new Error(
+              "Este funcionário ainda não está aprovado."
+            );
           }
 
           const cargosPermitidos = [
@@ -78,11 +79,9 @@ export default function AtendimentoPage() {
               funcionario.cargo
             )
           ) {
-            setErro(
+            throw new Error(
               "Seu cargo não possui acesso ao Atendimento."
             );
-            setCarregando(false);
-            return;
           }
 
           setUsuario({
@@ -90,41 +89,45 @@ export default function AtendimentoPage() {
             uid: usuarioAtual.uid,
           });
 
-          const solicitacoesRef =
+          /*
+           * BUSCA TODAS AS SOLICITAÇÕES
+           */
+          const referencia =
             collection(db, "solicitacoes");
 
-          const snapshot =
-            await getDocs(solicitacoesRef);
+          const resultado =
+            await getDocs(referencia);
 
           const lista =
-            snapshot.docs.map((documento) => ({
-              id: documento.id,
-              ...documento.data(),
+            resultado.docs.map((item) => ({
+              id: item.id,
+              ...item.data(),
             }));
 
           lista.sort((a, b) => {
-            const aData =
-              a.createdAt?.toDate?.()?.getTime?.() || 0;
+            const dataA =
+              a.createdAt?.toDate?.()?.getTime?.() ||
+              0;
 
-            const bData =
-              b.createdAt?.toDate?.()?.getTime?.() || 0;
+            const dataB =
+              b.createdAt?.toDate?.()?.getTime?.() ||
+              0;
 
-            return bData - aData;
+            return dataB - dataA;
           });
 
           setSolicitacoes(lista);
-          setCarregando(false);
         } catch (error) {
           console.error(
-            "ERRO AO CARREGAR ATENDIMENTO:",
+            "ERRO ATENDIMENTO:",
             error
           );
 
           setErro(
             error?.message ||
-              "Não foi possível carregar as solicitações."
+              "Erro desconhecido ao carregar solicitações."
           );
-
+        } finally {
           setCarregando(false);
         }
       }
@@ -144,12 +147,9 @@ export default function AtendimentoPage() {
           ? valor.toDate()
           : new Date(valor);
 
-      return data.toLocaleString("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      });
+      return data.toLocaleString("pt-BR");
     } catch {
-      return "Data não disponível";
+      return "Data inválida";
     }
   }
 
@@ -161,8 +161,8 @@ export default function AtendimentoPage() {
     );
   }
 
-  function status(item) {
-    switch (item.status) {
+  function nomeStatus(valor) {
+    switch (valor) {
       case "nova":
         return "Nova";
 
@@ -188,7 +188,7 @@ export default function AtendimentoPage() {
         return "Finalizada";
 
       default:
-        return "Nova";
+        return valor || "Sem status";
     }
   }
 
@@ -201,14 +201,14 @@ export default function AtendimentoPage() {
             <span> FLOW</span>
           </div>
 
-          <div className="loading-spinner"></div>
+          <div className="loading-spinner" />
 
           <h2>
             Carregando Atendimento
           </h2>
 
           <p>
-            Buscando solicitações...
+            Consultando solicitações no Firebase...
           </p>
         </div>
       </main>
@@ -224,9 +224,18 @@ export default function AtendimentoPage() {
             <span> FLOW</span>
           </div>
 
+          <h2>
+            Erro ao carregar Atendimento
+          </h2>
+
           <div className="error-message">
             {erro}
           </div>
+
+          <p>
+            Essa mensagem é o erro retornado pelo
+            Firebase.
+          </p>
 
           <button
             className="create-account-button"
@@ -253,23 +262,9 @@ export default function AtendimentoPage() {
     );
   }
 
-  const novas = solicitacoes.filter(
-    (item) => item.status === "nova"
-  ).length;
-
-  const analise = solicitacoes.filter(
-    (item) => item.status === "analise"
-  ).length;
-
-  const propostas = solicitacoes.filter(
-    (item) => item.status === "proposta"
-  ).length;
-
   return (
     <main className="dashboard-page">
-
       <aside className="dashboard-sidebar">
-
         <div className="dashboard-logo">
           <strong>WKORA</strong>
           <span> FLOW</span>
@@ -298,7 +293,6 @@ export default function AtendimentoPage() {
         </div>
 
         <nav className="dashboard-menu">
-
           <button
             className="menu-item"
             type="button"
@@ -318,7 +312,6 @@ export default function AtendimentoPage() {
             <span>📥</span>
             Atendimento
           </button>
-
         </nav>
 
         <button
@@ -333,13 +326,10 @@ export default function AtendimentoPage() {
         >
           🚪 Sair
         </button>
-
       </aside>
 
       <section className="dashboard-main">
-
         <header className="dashboard-header">
-
           <div>
             <span className="dashboard-header-label">
               WKORA FLOW
@@ -359,13 +349,10 @@ export default function AtendimentoPage() {
               {usuario?.cargo}
             </strong>
           </div>
-
         </header>
 
         <div className="dashboard-content">
-
           <section className="welcome-card">
-
             <div>
               <span>
                 CENTRAL DE ATENDIMENTO
@@ -376,22 +363,24 @@ export default function AtendimentoPage() {
               </h2>
 
               <p>
-                Todas as solicitações enviadas
-                pelos clientes aparecem nesta central.
+                Solicitações enviadas pelos
+                clientes aparecem aqui.
               </p>
             </div>
 
             <div className="welcome-icon">
               📥
             </div>
-
           </section>
 
           <section className="dashboard-stats">
-
             <div className="stat-card">
               <span>📥</span>
-              <small>Total</small>
+
+              <small>
+                Total
+              </small>
+
               <strong>
                 {solicitacoes.length}
               </strong>
@@ -399,32 +388,57 @@ export default function AtendimentoPage() {
 
             <div className="stat-card">
               <span>🆕</span>
-              <small>Novas</small>
+
+              <small>
+                Novas
+              </small>
+
               <strong>
-                {novas}
+                {
+                  solicitacoes.filter(
+                    (item) =>
+                      item.status === "nova"
+                  ).length
+                }
               </strong>
             </div>
 
             <div className="stat-card">
               <span>🔎</span>
-              <small>Em análise</small>
+
+              <small>
+                Em análise
+              </small>
+
               <strong>
-                {analise}
+                {
+                  solicitacoes.filter(
+                    (item) =>
+                      item.status === "analise"
+                  ).length
+                }
               </strong>
             </div>
 
             <div className="stat-card">
               <span>📄</span>
-              <small>Propostas</small>
+
+              <small>
+                Propostas
+              </small>
+
               <strong>
-                {propostas}
+                {
+                  solicitacoes.filter(
+                    (item) =>
+                      item.status === "proposta"
+                  ).length
+                }
               </strong>
             </div>
-
           </section>
 
           <section className="dashboard-section">
-
             <div className="section-title">
               <div>
                 <span>
@@ -448,120 +462,108 @@ export default function AtendimentoPage() {
             </div>
 
             {solicitacoes.length === 0 ? (
-
               <div className="empty-dashboard">
-
                 <div className="empty-icon">
                   📭
                 </div>
 
                 <h3>
-                  Nenhuma solicitação
+                  Nenhuma solicitação encontrada
                 </h3>
 
                 <p>
-                  Não há solicitações disponíveis
-                  para atendimento.
+                  O Firebase respondeu, mas a
+                  coleção solicitacoes retornou
+                  0 documentos.
                 </p>
 
+                <p>
+                  Verifique se a solicitação está
+                  realmente dentro de:
+                </p>
+
+                <strong>
+                  Firestore Database → solicitacoes
+                </strong>
               </div>
-
             ) : (
-
               <div className="solicitacoes-lista">
-
-                {solicitacoes.map(
-                  (item) => (
-
-                    <article
-                      className="solicitacao-card"
-                      key={item.id}
-                    >
-
-                      <div className="solicitacao-topo">
-
-                        <div>
-
-                          <span className="solicitacao-id">
-                            ID: {item.id}
-                          </span>
-
-                          <h3>
-                            {item.customer?.name ||
-                              "Cliente"}
-                          </h3>
-
-                        </div>
-
-                        <span className="status-badge">
-                          {status(item)}
+                {solicitacoes.map((item) => (
+                  <article
+                    className="solicitacao-card"
+                    key={item.id}
+                  >
+                    <div className="solicitacao-topo">
+                      <div>
+                        <span className="solicitacao-id">
+                          ID: {item.id}
                         </span>
 
+                        <h3>
+                          {item.customer?.name ||
+                            "Cliente"}
+                        </h3>
                       </div>
 
-                      <div className="solicitacao-info">
+                      <span className="status-badge">
+                        {nomeStatus(
+                          item.status
+                        )}
+                      </span>
+                    </div>
 
-                        <div>
-                          <small>
-                            Serviço
-                          </small>
+                    <div className="solicitacao-info">
+                      <div>
+                        <small>
+                          Serviço
+                        </small>
 
-                          <strong>
-                            {nomeServico(item)}
-                          </strong>
-                        </div>
-
-                        <div>
-                          <small>
-                            Empresa
-                          </small>
-
-                          <strong>
-                            {item.customer?.company ||
-                              "Não informada"}
-                          </strong>
-                        </div>
-
-                        <div>
-                          <small>
-                            Contato
-                          </small>
-
-                          <strong>
-                            {item.customer?.contact ||
-                              "Não informado"}
-                          </strong>
-                        </div>
-
-                        <div>
-                          <small>
-                            Recebida em
-                          </small>
-
-                          <strong>
-                            {formatarData(
-                              item.createdAt
-                            )}
-                          </strong>
-                        </div>
-
+                        <strong>
+                          {nomeServico(item)}
+                        </strong>
                       </div>
 
-                    </article>
+                      <div>
+                        <small>
+                          Empresa
+                        </small>
 
-                  )
-                )}
+                        <strong>
+                          {item.customer?.company ||
+                            "Não informada"}
+                        </strong>
+                      </div>
 
+                      <div>
+                        <small>
+                          Contato
+                        </small>
+
+                        <strong>
+                          {item.customer?.contact ||
+                            "Não informado"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <small>
+                          Recebida em
+                        </small>
+
+                        <strong>
+                          {formatarData(
+                            item.createdAt
+                          )}
+                        </strong>
+                      </div>
+                    </div>
+                  </article>
+                ))}
               </div>
-
             )}
-
           </section>
-
         </div>
-
       </section>
-
     </main>
   );
-  }
+                }
