@@ -9,9 +9,9 @@ import {
 
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
-  query,
-  orderBy,
 } from "firebase/firestore";
 
 import { auth, db } from "../../../../lib/firebase";
@@ -23,6 +23,8 @@ export default function AtendimentoPage() {
   const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
+    let ativo = true;
+
     const cancelar = onAuthStateChanged(
       auth,
       async (usuarioAtual) => {
@@ -42,29 +44,27 @@ export default function AtendimentoPage() {
             return;
           }
 
-          const funcionarioRef = await getDocs(
-            query(
-              collection(db, "funcionarios")
-            )
+          /*
+           * Busca somente o funcionário
+           * atualmente conectado.
+           */
+          const funcionarioRef = doc(
+            db,
+            "funcionarios",
+            usuarioAtual.uid
           );
 
-          const funcionarioEncontrado =
-            funcionarioRef.docs.find(
-              (item) =>
-                item.id === usuarioAtual.uid
+          const funcionarioSnapshot =
+            await getDoc(funcionarioRef);
+
+          if (!funcionarioSnapshot.exists()) {
+            throw new Error(
+              "Cadastro do funcionário não encontrado."
             );
-
-          if (!funcionarioEncontrado) {
-            await signOut(auth);
-
-            window.location.href =
-              "/funcionarios/login";
-
-            return;
           }
 
           const funcionario =
-            funcionarioEncontrado.data();
+            funcionarioSnapshot.data();
 
           if (
             funcionario.status !== "aprovado"
@@ -81,7 +81,6 @@ export default function AtendimentoPage() {
             "CEO",
             "Diretor",
             "Atendimento",
-            "Suporte",
           ];
 
           if (
@@ -94,18 +93,68 @@ export default function AtendimentoPage() {
             );
 
             setCarregando(false);
+
             return;
           }
 
-          setUsuario(funcionario);
+          if (!ativo) return;
 
-          await carregarSolicitacoes();
+          setUsuario({
+            ...funcionario,
+            uid: usuarioAtual.uid,
+          });
 
+          /*
+           * Busca as solicitações.
+           *
+           * Sem orderBy para evitar dependência
+           * de índice do Firestore.
+           */
+          const referencia = collection(
+            db,
+            "solicitacoes"
+          );
+
+          const snapshot =
+            await getDocs(referencia);
+
+          const dados =
+            snapshot.docs.map((documento) => ({
+              id: documento.id,
+              ...documento.data(),
+            }));
+
+          /*
+           * Ordena as solicitações mais recentes
+           * primeiro.
+           */
+          dados.sort((a, b) => {
+            const dataA =
+              a.createdAt?.toDate?.()?.getTime?.() ||
+              0;
+
+            const dataB =
+              b.createdAt?.toDate?.()?.getTime?.() ||
+              0;
+
+            return dataB - dataA;
+          });
+
+          if (!ativo) return;
+
+          setSolicitacoes(dados);
+          setCarregando(false);
         } catch (error) {
-          console.error(error);
+          console.error(
+            "ERRO ATENDIMENTO:",
+            error
+          );
+
+          if (!ativo) return;
 
           setErro(
-            "Não foi possível carregar o Atendimento."
+            error?.message ||
+              "Não foi possível carregar as solicitações."
           );
 
           setCarregando(false);
@@ -113,45 +162,11 @@ export default function AtendimentoPage() {
       }
     );
 
-    return () => cancelar();
+    return () => {
+      ativo = false;
+      cancelar();
+    };
   }, []);
-
-  async function carregarSolicitacoes() {
-    try {
-      const referencia = collection(
-        db,
-        "solicitacoes"
-      );
-
-      const consulta = query(
-        referencia,
-        orderBy("createdAt", "desc")
-      );
-
-      const snapshot = await getDocs(
-        consulta
-      );
-
-      const dados = snapshot.docs.map(
-        (documento) => ({
-          id: documento.id,
-          ...documento.data(),
-        })
-      );
-
-      setSolicitacoes(dados);
-      setCarregando(false);
-
-    } catch (error) {
-      console.error(error);
-
-      setErro(
-        "Não foi possível carregar as solicitações."
-      );
-
-      setCarregando(false);
-    }
-  }
 
   function formatarData(valor) {
     if (!valor) {
@@ -174,6 +189,29 @@ export default function AtendimentoPage() {
     } catch {
       return "Data não disponível";
     }
+  }
+
+  function nomeServico(solicitacao) {
+    return (
+      solicitacao.service?.name ||
+      solicitacao.service?.type ||
+      "Serviço não informado"
+    );
+  }
+
+  function statusFormatado(status) {
+    const nomes = {
+      nova: "Nova",
+      analise: "Em análise",
+      proposta: "Proposta",
+      aprovada: "Aprovada",
+      projeto: "Projeto",
+      entregue: "Entregue",
+      suporte: "Suporte",
+      finalizada: "Finalizada",
+    };
+
+    return nomes[status] || "Nova";
   }
 
   if (carregando) {
@@ -219,6 +257,16 @@ export default function AtendimentoPage() {
             type="button"
             className="create-account-button"
             onClick={() => {
+              window.location.reload();
+            }}
+          >
+            Tentar novamente
+          </button>
+
+          <button
+            type="button"
+            className="back-button"
+            onClick={() => {
               window.location.href =
                 "/funcionarios/painel";
             }}
@@ -230,6 +278,21 @@ export default function AtendimentoPage() {
       </main>
     );
   }
+
+  const novas =
+    solicitacoes.filter(
+      (item) => item.status === "nova"
+    ).length;
+
+  const emAnalise =
+    solicitacoes.filter(
+      (item) => item.status === "analise"
+    ).length;
+
+  const propostas =
+    solicitacoes.filter(
+      (item) => item.status === "proposta"
+    ).length;
 
   return (
     <main className="dashboard-page">
@@ -255,7 +318,7 @@ export default function AtendimentoPage() {
 
           <div>
             <strong>
-              {usuario?.nome}
+              {usuario?.nome || "Funcionário"}
             </strong>
 
             <span>
@@ -337,7 +400,6 @@ export default function AtendimentoPage() {
           <section className="welcome-card">
 
             <div>
-
               <span>
                 CENTRAL DE ATENDIMENTO
               </span>
@@ -347,10 +409,9 @@ export default function AtendimentoPage() {
               </h2>
 
               <p>
-                Aqui serão exibidas as solicitações
-                enviadas pelos clientes.
+                Todas as solicitações recebidas
+                pela WKORA DIGITAL aparecem aqui.
               </p>
-
             </div>
 
             <div className="welcome-icon">
@@ -362,76 +423,35 @@ export default function AtendimentoPage() {
           <section className="dashboard-stats">
 
             <div className="stat-card">
-
               <span>📥</span>
-
-              <small>
-                Total
-              </small>
-
+              <small>Total</small>
               <strong>
                 {solicitacoes.length}
               </strong>
-
             </div>
 
             <div className="stat-card">
-
               <span>🆕</span>
-
-              <small>
-                Novas
-              </small>
-
+              <small>Novas</small>
               <strong>
-                {
-                  solicitacoes.filter(
-                    (item) =>
-                      item.status === "nova"
-                  ).length
-                }
+                {novas}
               </strong>
-
             </div>
 
             <div className="stat-card">
-
               <span>🔎</span>
-
-              <small>
-                Em análise
-              </small>
-
+              <small>Em análise</small>
               <strong>
-                {
-                  solicitacoes.filter(
-                    (item) =>
-                      item.status ===
-                      "analise"
-                  ).length
-                }
+                {emAnalise}
               </strong>
-
             </div>
 
             <div className="stat-card">
-
               <span>📄</span>
-
-              <small>
-                Propostas
-              </small>
-
+              <small>Propostas</small>
               <strong>
-                {
-                  solicitacoes.filter(
-                    (item) =>
-                      item.status ===
-                      "proposta"
-                  ).length
-                }
+                {propostas}
               </strong>
-
             </div>
 
           </section>
@@ -450,6 +470,16 @@ export default function AtendimentoPage() {
                 </h2>
               </div>
 
+              <button
+                type="button"
+                className="header-link"
+                onClick={() => {
+                  window.location.reload();
+                }}
+              >
+                Atualizar
+              </button>
+
             </div>
 
             {solicitacoes.length === 0 ? (
@@ -461,12 +491,12 @@ export default function AtendimentoPage() {
                 </div>
 
                 <h3>
-                  Nenhuma solicitação
+                  Nenhuma solicitação encontrada
                 </h3>
 
                 <p>
-                  Ainda não existem solicitações
-                  registradas no Firestore.
+                  O Firestore não retornou nenhuma
+                  solicitação para este setor.
                 </p>
 
               </div>
@@ -488,7 +518,7 @@ export default function AtendimentoPage() {
                         <div>
 
                           <span className="solicitacao-id">
-                            {solicitacao.id}
+                            ID: {solicitacao.id}
                           </span>
 
                           <h3>
@@ -499,8 +529,9 @@ export default function AtendimentoPage() {
                         </div>
 
                         <span className="status-badge">
-                          {solicitacao.status ||
-                            "nova"}
+                          {statusFormatado(
+                            solicitacao.status
+                          )}
                         </span>
 
                       </div>
@@ -513,9 +544,9 @@ export default function AtendimentoPage() {
                           </small>
 
                           <strong>
-                            {solicitacao.service?.name ||
-                              solicitacao.service?.type ||
-                              "Não informado"}
+                            {nomeServico(
+                              solicitacao
+                            )}
                           </strong>
                         </div>
 
@@ -555,6 +586,22 @@ export default function AtendimentoPage() {
 
                       </div>
 
+                      <div className="solicitacao-acoes">
+
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={() => {
+                            alert(
+                              "A abertura detalhada será implementada na próxima etapa."
+                            );
+                          }}
+                        >
+                          Abrir solicitação
+                        </button>
+
+                      </div>
+
                     </article>
 
                   )
@@ -572,4 +619,4 @@ export default function AtendimentoPage() {
 
     </main>
   );
-        }
+}
