@@ -18,13 +18,11 @@ import { auth, db } from "../../../../lib/firebase";
 
 export default function AtendimentoPage() {
   const [carregando, setCarregando] = useState(true);
+  const [usuario, setUsuario] = useState(null);
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [erro, setErro] = useState("");
-  const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
-    let ativo = true;
-
     const cancelar = onAuthStateChanged(
       auth,
       async (usuarioAtual) => {
@@ -37,17 +35,11 @@ export default function AtendimentoPage() {
         try {
           if (!usuarioAtual.emailVerified) {
             await signOut(auth);
-
             window.location.href =
               "/funcionarios/login";
-
             return;
           }
 
-          /*
-           * Busca somente o funcionário
-           * atualmente conectado.
-           */
           const funcionarioRef = doc(
             db,
             "funcionarios",
@@ -70,10 +62,8 @@ export default function AtendimentoPage() {
             funcionario.status !== "aprovado"
           ) {
             await signOut(auth);
-
             window.location.href =
               "/funcionarios/login";
-
             return;
           }
 
@@ -91,66 +81,44 @@ export default function AtendimentoPage() {
             setErro(
               "Seu cargo não possui acesso ao Atendimento."
             );
-
             setCarregando(false);
-
             return;
           }
-
-          if (!ativo) return;
 
           setUsuario({
             ...funcionario,
             uid: usuarioAtual.uid,
           });
 
-          /*
-           * Busca as solicitações.
-           *
-           * Sem orderBy para evitar dependência
-           * de índice do Firestore.
-           */
-          const referencia = collection(
-            db,
-            "solicitacoes"
-          );
+          const solicitacoesRef =
+            collection(db, "solicitacoes");
 
           const snapshot =
-            await getDocs(referencia);
+            await getDocs(solicitacoesRef);
 
-          const dados =
+          const lista =
             snapshot.docs.map((documento) => ({
               id: documento.id,
               ...documento.data(),
             }));
 
-          /*
-           * Ordena as solicitações mais recentes
-           * primeiro.
-           */
-          dados.sort((a, b) => {
-            const dataA =
-              a.createdAt?.toDate?.()?.getTime?.() ||
-              0;
+          lista.sort((a, b) => {
+            const aData =
+              a.createdAt?.toDate?.()?.getTime?.() || 0;
 
-            const dataB =
-              b.createdAt?.toDate?.()?.getTime?.() ||
-              0;
+            const bData =
+              b.createdAt?.toDate?.()?.getTime?.() || 0;
 
-            return dataB - dataA;
+            return bData - aData;
           });
 
-          if (!ativo) return;
-
-          setSolicitacoes(dados);
+          setSolicitacoes(lista);
           setCarregando(false);
         } catch (error) {
           console.error(
-            "ERRO ATENDIMENTO:",
+            "ERRO AO CARREGAR ATENDIMENTO:",
             error
           );
-
-          if (!ativo) return;
 
           setErro(
             error?.message ||
@@ -162,10 +130,7 @@ export default function AtendimentoPage() {
       }
     );
 
-    return () => {
-      ativo = false;
-      cancelar();
-    };
+    return () => cancelar();
   }, []);
 
   function formatarData(valor) {
@@ -179,46 +144,58 @@ export default function AtendimentoPage() {
           ? valor.toDate()
           : new Date(valor);
 
-      return data.toLocaleString(
-        "pt-BR",
-        {
-          dateStyle: "short",
-          timeStyle: "short",
-        }
-      );
+      return data.toLocaleString("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
     } catch {
       return "Data não disponível";
     }
   }
 
-  function nomeServico(solicitacao) {
+  function nomeServico(item) {
     return (
-      solicitacao.service?.name ||
-      solicitacao.service?.type ||
+      item.service?.name ||
+      item.service?.type ||
       "Serviço não informado"
     );
   }
 
-  function statusFormatado(status) {
-    const nomes = {
-      nova: "Nova",
-      analise: "Em análise",
-      proposta: "Proposta",
-      aprovada: "Aprovada",
-      projeto: "Projeto",
-      entregue: "Entregue",
-      suporte: "Suporte",
-      finalizada: "Finalizada",
-    };
+  function status(item) {
+    switch (item.status) {
+      case "nova":
+        return "Nova";
 
-    return nomes[status] || "Nova";
+      case "analise":
+        return "Em análise";
+
+      case "proposta":
+        return "Proposta";
+
+      case "aprovada":
+        return "Aprovada";
+
+      case "projeto":
+        return "Projeto";
+
+      case "entregue":
+        return "Entregue";
+
+      case "suporte":
+        return "Suporte";
+
+      case "finalizada":
+        return "Finalizada";
+
+      default:
+        return "Nova";
+    }
   }
 
   if (carregando) {
     return (
       <main className="painel-loading">
         <div className="painel-loading-card">
-
           <div className="funcionarios-brand">
             <strong>WKORA</strong>
             <span> FLOW</span>
@@ -233,7 +210,6 @@ export default function AtendimentoPage() {
           <p>
             Buscando solicitações...
           </p>
-
         </div>
       </main>
     );
@@ -243,7 +219,6 @@ export default function AtendimentoPage() {
     return (
       <main className="painel-loading">
         <div className="funcionarios-card">
-
           <div className="funcionarios-brand">
             <strong>WKORA</strong>
             <span> FLOW</span>
@@ -254,18 +229,18 @@ export default function AtendimentoPage() {
           </div>
 
           <button
-            type="button"
             className="create-account-button"
-            onClick={() => {
-              window.location.reload();
-            }}
+            type="button"
+            onClick={() =>
+              window.location.reload()
+            }
           >
             Tentar novamente
           </button>
 
           <button
-            type="button"
             className="back-button"
+            type="button"
             onClick={() => {
               window.location.href =
                 "/funcionarios/painel";
@@ -273,26 +248,22 @@ export default function AtendimentoPage() {
           >
             Voltar ao painel
           </button>
-
         </div>
       </main>
     );
   }
 
-  const novas =
-    solicitacoes.filter(
-      (item) => item.status === "nova"
-    ).length;
+  const novas = solicitacoes.filter(
+    (item) => item.status === "nova"
+  ).length;
 
-  const emAnalise =
-    solicitacoes.filter(
-      (item) => item.status === "analise"
-    ).length;
+  const analise = solicitacoes.filter(
+    (item) => item.status === "analise"
+  ).length;
 
-  const propostas =
-    solicitacoes.filter(
-      (item) => item.status === "proposta"
-    ).length;
+  const propostas = solicitacoes.filter(
+    (item) => item.status === "proposta"
+  ).length;
 
   return (
     <main className="dashboard-page">
@@ -309,7 +280,6 @@ export default function AtendimentoPage() {
         </div>
 
         <div className="dashboard-profile">
-
           <div className="profile-avatar">
             {(usuario?.nome || "F")
               .charAt(0)
@@ -318,21 +288,20 @@ export default function AtendimentoPage() {
 
           <div>
             <strong>
-              {usuario?.nome || "Funcionário"}
+              {usuario?.nome}
             </strong>
 
             <span>
               {usuario?.cargo}
             </span>
           </div>
-
         </div>
 
         <nav className="dashboard-menu">
 
           <button
-            type="button"
             className="menu-item"
+            type="button"
             onClick={() => {
               window.location.href =
                 "/funcionarios/painel";
@@ -343,8 +312,8 @@ export default function AtendimentoPage() {
           </button>
 
           <button
-            type="button"
             className="menu-item ativo"
+            type="button"
           >
             <span>📥</span>
             Atendimento
@@ -353,8 +322,8 @@ export default function AtendimentoPage() {
         </nav>
 
         <button
-          type="button"
           className="dashboard-logout"
+          type="button"
           onClick={async () => {
             await signOut(auth);
 
@@ -382,7 +351,6 @@ export default function AtendimentoPage() {
           </div>
 
           <div className="header-user">
-
             <span>
               {usuario?.nome}
             </span>
@@ -390,7 +358,6 @@ export default function AtendimentoPage() {
             <strong>
               {usuario?.cargo}
             </strong>
-
           </div>
 
         </header>
@@ -409,8 +376,8 @@ export default function AtendimentoPage() {
               </h2>
 
               <p>
-                Todas as solicitações recebidas
-                pela WKORA DIGITAL aparecem aqui.
+                Todas as solicitações enviadas
+                pelos clientes aparecem nesta central.
               </p>
             </div>
 
@@ -442,7 +409,7 @@ export default function AtendimentoPage() {
               <span>🔎</span>
               <small>Em análise</small>
               <strong>
-                {emAnalise}
+                {analise}
               </strong>
             </div>
 
@@ -459,27 +426,25 @@ export default function AtendimentoPage() {
           <section className="dashboard-section">
 
             <div className="section-title">
-
               <div>
                 <span>
-                  SOLICITAÇÕES
+                  CAIXA DE ENTRADA
                 </span>
 
                 <h2>
-                  Caixa de entrada
+                  Solicitações
                 </h2>
               </div>
 
               <button
-                type="button"
                 className="header-link"
-                onClick={() => {
-                  window.location.reload();
-                }}
+                type="button"
+                onClick={() =>
+                  window.location.reload()
+                }
               >
                 Atualizar
               </button>
-
             </div>
 
             {solicitacoes.length === 0 ? (
@@ -491,12 +456,12 @@ export default function AtendimentoPage() {
                 </div>
 
                 <h3>
-                  Nenhuma solicitação encontrada
+                  Nenhuma solicitação
                 </h3>
 
                 <p>
-                  O Firestore não retornou nenhuma
-                  solicitação para este setor.
+                  Não há solicitações disponíveis
+                  para atendimento.
                 </p>
 
               </div>
@@ -506,11 +471,11 @@ export default function AtendimentoPage() {
               <div className="solicitacoes-lista">
 
                 {solicitacoes.map(
-                  (solicitacao) => (
+                  (item) => (
 
                     <article
-                      key={solicitacao.id}
                       className="solicitacao-card"
+                      key={item.id}
                     >
 
                       <div className="solicitacao-topo">
@@ -518,20 +483,18 @@ export default function AtendimentoPage() {
                         <div>
 
                           <span className="solicitacao-id">
-                            ID: {solicitacao.id}
+                            ID: {item.id}
                           </span>
 
                           <h3>
-                            {solicitacao.customer?.name ||
+                            {item.customer?.name ||
                               "Cliente"}
                           </h3>
 
                         </div>
 
                         <span className="status-badge">
-                          {statusFormatado(
-                            solicitacao.status
-                          )}
+                          {status(item)}
                         </span>
 
                       </div>
@@ -544,9 +507,7 @@ export default function AtendimentoPage() {
                           </small>
 
                           <strong>
-                            {nomeServico(
-                              solicitacao
-                            )}
+                            {nomeServico(item)}
                           </strong>
                         </div>
 
@@ -556,7 +517,7 @@ export default function AtendimentoPage() {
                           </small>
 
                           <strong>
-                            {solicitacao.customer?.company ||
+                            {item.customer?.company ||
                               "Não informada"}
                           </strong>
                         </div>
@@ -567,7 +528,7 @@ export default function AtendimentoPage() {
                           </small>
 
                           <strong>
-                            {solicitacao.customer?.contact ||
+                            {item.customer?.contact ||
                               "Não informado"}
                           </strong>
                         </div>
@@ -579,26 +540,10 @@ export default function AtendimentoPage() {
 
                           <strong>
                             {formatarData(
-                              solicitacao.createdAt
+                              item.createdAt
                             )}
                           </strong>
                         </div>
-
-                      </div>
-
-                      <div className="solicitacao-acoes">
-
-                        <button
-                          type="button"
-                          className="primary-button"
-                          onClick={() => {
-                            alert(
-                              "A abertura detalhada será implementada na próxima etapa."
-                            );
-                          }}
-                        >
-                          Abrir solicitação
-                        </button>
 
                       </div>
 
@@ -619,4 +564,4 @@ export default function AtendimentoPage() {
 
     </main>
   );
-}
+  }
