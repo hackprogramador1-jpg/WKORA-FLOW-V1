@@ -16,8 +16,8 @@ const services = {
       ["pages", "Quais páginas gostaria de ter?"],
       ["features", "Quais funcionalidades você precisa?"],
       ["deadline", "Existe algum prazo desejado?"],
-      ["details", "Conte mais sobre o projeto"]
-    ]
+      ["details", "Conte mais sobre o projeto"],
+    ],
   },
 
   saas: {
@@ -32,8 +32,8 @@ const services = {
       ["users", "Quem utilizará o sistema?"],
       ["features", "Quais funcionalidades você imagina?"],
       ["integrations", "Precisa de integrações com outros serviços?"],
-      ["details", "Explique como você gostaria que o SaaS funcionasse"]
-    ]
+      ["details", "Explique como você gostaria que o SaaS funcionasse"],
+    ],
   },
 
   marketing: {
@@ -48,9 +48,9 @@ const services = {
       ["audience", "Qual é o público da empresa?"],
       ["channels", "Quais canais deseja trabalhar?"],
       ["brand", "A empresa já possui identidade visual?"],
-      ["details", "Conte mais sobre o que você precisa"]
-    ]
-  }
+      ["details", "Conte mais sobre o que você precisa"],
+    ],
+  },
 };
 
 export default function FlowApp() {
@@ -58,44 +58,65 @@ export default function FlowApp() {
   const [service, setService] = useState(null);
   const [form, setForm] = useState({});
   const [sentRequest, setSentRequest] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
   function chooseService(type) {
     setService(type);
     setForm({});
     setSentRequest(null);
+    setError("");
     setScreen("request");
   }
 
   function updateField(key, value) {
     setForm((current) => ({
       ...current,
-      [key]: value
+      [key]: value,
     }));
   }
 
-  function submitRequest(event) {
+  async function submitRequest(event) {
     event.preventDefault();
+
+    if (sending) {
+      return;
+    }
+
+    setError("");
 
     const name = String(form.name || "").trim();
     const contact = String(form.contact || "").trim();
 
     if (!name || !contact) {
-      alert("Preencha seu nome e um canal de contato.");
+      setError("Preencha seu nome e um canal de contato.");
       return;
     }
 
-    const request = createRequest({
-      service,
-      customer: {
-        name,
-        company: String(form.company || "").trim(),
-        contact
-      },
-      answers: form
-    });
+    try {
+      setSending(true);
 
-    setSentRequest(request);
-    setScreen("success");
+      const request = await createRequest({
+        service,
+        customer: {
+          name,
+          company: String(form.company || "").trim(),
+          contact,
+        },
+        answers: form,
+      });
+
+      setSentRequest(request);
+      setScreen("success");
+    } catch (error) {
+      console.error("Erro ao enviar solicitação:", error);
+
+      setError(
+        "Não foi possível enviar sua solicitação agora. Verifique sua conexão e tente novamente."
+      );
+    } finally {
+      setSending(false);
+    }
   }
 
   if (screen === "request" && service) {
@@ -107,7 +128,10 @@ export default function FlowApp() {
           <button
             className="back-button"
             type="button"
-            onClick={() => setScreen("home")}
+            onClick={() => {
+              setError("");
+              setScreen("home");
+            }}
           >
             ← Voltar
           </button>
@@ -120,7 +144,9 @@ export default function FlowApp() {
 
         <section className="request-container">
           <div className="request-heading">
-            <span className="eyebrow">SOLICITAÇÃO DE PROJETO</span>
+            <span className="eyebrow">
+              SOLICITAÇÃO DE PROJETO
+            </span>
 
             <h1>{selected.title}</h1>
 
@@ -171,6 +197,12 @@ export default function FlowApp() {
               );
             })}
 
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+
             <div className="privacy-notice">
               🔐 <strong>Privacidade:</strong> os dados
               enviados serão utilizados para análise do
@@ -181,8 +213,11 @@ export default function FlowApp() {
             <button
               className="primary-button"
               type="submit"
+              disabled={sending}
             >
-              Enviar solicitação
+              {sending
+                ? "Enviando solicitação..."
+                : "Enviar solicitação"}
             </button>
           </form>
         </section>
@@ -248,12 +283,82 @@ export default function FlowApp() {
                 setService(null);
                 setForm({});
                 setSentRequest(null);
+                setError("");
                 setScreen("home");
               }}
             >
               Voltar para a empresa
             </button>
           </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (screen === "privacy") {
+    return (
+      <main className="flow-page">
+        <header className="flow-header">
+          <button
+            className="back-button"
+            type="button"
+            onClick={() => setScreen("home")}
+          >
+            ← Voltar
+          </button>
+
+          <div className="brand">
+            <strong>WKORA</strong>
+            <span>FLOW</span>
+          </div>
+        </header>
+
+        <section className="company-section">
+          <span className="eyebrow">
+            PRIVACIDADE
+          </span>
+
+          <h2>Política de Privacidade</h2>
+
+          <p>
+            A WKORA DIGITAL valoriza a privacidade das
+            informações fornecidas por seus clientes e
+            visitantes.
+          </p>
+
+          <p>
+            Os dados enviados através da plataforma WKORA
+            FLOW são utilizados para atendimento, análise
+            das solicitações e comunicação relacionada aos
+            serviços solicitados.
+          </p>
+
+          <p>
+            Informações internas, observações da equipe,
+            dados de outros clientes e informações
+            administrativas não devem ser disponibilizados
+            publicamente.
+          </p>
+
+          <p>
+            O acesso às informações deve respeitar as
+            permissões correspondentes a cada usuário e
+            função dentro da plataforma.
+          </p>
+
+          <p>
+            A WKORA DIGITAL poderá atualizar suas políticas
+            e procedimentos de privacidade conforme a
+            evolução da plataforma e dos serviços.
+          </p>
+
+          <button
+            className="primary-button"
+            type="button"
+            onClick={() => setScreen("home")}
+          >
+            Voltar para a empresa
+          </button>
         </section>
       </main>
     );
@@ -299,7 +404,7 @@ export default function FlowApp() {
             document
               .getElementById("services")
               ?.scrollIntoView({
-                behavior: "smooth"
+                behavior: "smooth",
               })
           }
         >
@@ -461,4 +566,4 @@ export default function FlowApp() {
       </footer>
     </main>
   );
-        }
+}
