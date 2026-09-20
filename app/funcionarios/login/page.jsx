@@ -52,11 +52,10 @@ export default function FuncionariosLoginPage() {
       const usuario = credencial.user;
 
       if (!usuario.emailVerified) {
-        await sendEmailVerification(usuario);
         await signOut(auth);
 
         setErro(
-          "Seu e-mail ainda não foi verificado. Enviamos um novo link de verificação para seu e-mail."
+          "Seu e-mail ainda não foi verificado. Verifique sua caixa de entrada antes de entrar."
         );
 
         return;
@@ -106,10 +105,11 @@ export default function FuncionariosLoginPage() {
       }
 
       setMensagem(
-        `Login autorizado. Cargo: ${funcionario.cargo}.`
+        "Login autorizado. Redirecionando..."
       );
 
-      await signOut(auth);
+      window.location.href =
+        "/funcionarios/painel";
 
     } catch (error) {
       console.error(error);
@@ -166,7 +166,8 @@ export default function FuncionariosLoginPage() {
         <h1>Entrar</h1>
 
         <p className="funcionarios-description">
-          Acesse sua conta de funcionário da WKORA DIGITAL.
+          Acesse sua conta de funcionário da
+          WKORA DIGITAL.
         </p>
 
         <div className="funcionarios-tabs">
@@ -181,7 +182,8 @@ export default function FuncionariosLoginPage() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = "/funcionarios";
+              window.location.href =
+                "/funcionarios";
             }}
           >
             Criar conta
@@ -220,12 +222,15 @@ export default function FuncionariosLoginPage() {
           />
 
           <div className="security-box">
-            <strong>🔐 Acesso protegido</strong>
+            <strong>
+              🔐 Acesso protegido
+            </strong>
 
             <p>
-              O acesso depende da verificação do
-              e-mail e da aprovação do funcionário
-              por um responsável autorizado.
+              O acesso depende da verificação
+              do e-mail, da aprovação do
+              funcionário e da definição de
+              um cargo autorizado.
             </p>
           </div>
 
@@ -260,4 +265,4 @@ export default function FuncionariosLoginPage() {
       </section>
     </main>
   );
-            }
+}
